@@ -10,6 +10,7 @@ import java.text.SimpleDateFormat;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.Random;
 
 /**
@@ -42,14 +43,17 @@ public class Client {
 
         clientOut.writeLong(clientTimeLong);
 
+        System.out.println("Esperando resposta do servidor!");
+        
         //Reading the time from server, and the gap
         long serverTime = clientIn.readLong();
         int gapServer = clientIn.readInt();
 
         long adjustedTime = adjustTime(serverTime, gapServer);
 
-        System.out.println("Horário Cliente:" + clientTime);
-        System.out.println("Horário Ajustado:" + adjustedTime);
+        System.out.println("Horário Cliente: " + clientFullTime);
+        System.out.println("Horário Server: " + new Date(serverTime));
+        System.out.println("Horário Ajustado: " + new Date(adjustedTime));
     }
 
     private static long adjustTime(long sTime, int gap) {
