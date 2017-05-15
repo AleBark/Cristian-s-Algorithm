@@ -11,7 +11,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Set;
 import org.joda.time.DateTime;
-import org.joda.time.Minutes;
 
 /**
  *
@@ -22,7 +21,7 @@ public class Server {
     public static void main(String[] args) throws IOException, InterruptedException, ParseException {
 
         //Port, and the gap from client - server time
-        HashMap<Integer, Integer> clientes = new HashMap<>();
+        HashMap<Integer, Integer> clients = new HashMap<>();
 
         InetAddress group = InetAddress.getByName("226.8.3.5");
         MulticastSocket ms = new MulticastSocket();
@@ -44,48 +43,36 @@ public class Server {
             try {
 
                 ds.receive(pct);
-                clientes.put(pct.getPort(), new Integer(new String(pct.getData(), pct.getOffset(), pct.getLength())));
+                clients.put(pct.getPort(), new Integer(new String(pct.getData(), pct.getOffset(), pct.getLength())));
 
             } catch (SocketTimeoutException e) {
                 break;
             }
         }
 
-        //Getting all the time gaps, and returning its average to a new variable called diff
-        Set<Integer> chaves = clientes.keySet();
-        int diff = 0;
-        for (Integer chave : chaves) {
-            int val = clientes.get(chave);
-            System.out.println("chave" + chave);
-            System.out.println("valor" + val);
-            diff += val;
+        //Getting all the time gaps, and returning its average to a new variable
+        Set<Integer> keys = clients.keySet();
+        int average = 0;
+        for (Integer key : keys) {
+            int val = clients.get(key);
+            average += val;
         }
-        diff = diff / (clientes.size() + 1);
+        average = average / (clients.size() + 1);
 
-        System.out.println("media= " + diff);
+        DateTime serverDateTime = new DateTime(serverTime);
+        serverDateTime = serverDateTime.plusMinutes(average);
+        Date serverAdjustedTime = new Date(serverDateTime.getMillis());
 
-        //SETA HORA SERVIDOR
-        DateTime altHr = new DateTime(serverTime);
-        altHr = altHr.plusMinutes(diff);
-        serverTime = altHr.getMillis();
+        System.out.println("Old server time: " + new Date(serverTime));
+        System.out.println("New server time: " + serverAdjustedTime);
 
-        System.out.println("Horario do servidor reajustado" + " para: " + new Date(serverTime));
-
-        int dif;
-        for (Integer chave : chaves) {
-            dif = clientes.get(chave);
-
-            DateTime finalHour = new DateTime(serverTime);
-            DateTime initialHour = new DateTime(serverTime);
-            DateTime clientTime = initialHour.plus(Minutes.minutes(dif));
-
-            int finalTime = Minutes.minutesBetween(finalHour, clientTime).getMinutes();
-
-            System.out.println("diferença horario final enviada: " + -finalTime);
-            DatagramPacket pct2 = new DatagramPacket(String.valueOf(-finalTime).getBytes(), String.valueOf(-finalTime).length(), InetAddress.getByName("127.0.0.1"), chave);
+//      clientNewTime = serverDateTime - serverAdjustedTime = serverAdjustedTime
+        for (Integer key : keys) {
+            int port = key;
+            DatagramPacket pct2 = new DatagramPacket(String.valueOf(serverAdjustedTime).getBytes(), String.valueOf(serverAdjustedTime).length(), InetAddress.getByName("127.0.0.1"), port);
             ds.send(pct2);
 
         }
-    }
 
+    }
 }
